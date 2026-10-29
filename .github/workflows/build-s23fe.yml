@@ -1,0 +1,59 @@
+
+name: Build Musify S23 FE
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter dependencies
+        run: flutter pub get
+
+      - name: Verify environment
+        run: |
+          flutter --version
+          flutter doctor -v
+          java -version
+
+      - name: Build ARM64 release APK
+        run: |
+          flutter build apk \
+            --release \
+            --flavor github \
+            --target-platform android-arm64 \
+            --split-per-abi
+
+      - name: List APK outputs
+        run: |
+          find build/app/outputs/flutter-apk \
+            -type f -name '*.apk' -ls
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Musify-S23FE-ARM64
+          path: build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: error
+          retention-days: 7
